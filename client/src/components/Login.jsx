@@ -64,7 +64,7 @@ class Login extends React.Component {
       this.setState({ passwordError: "", error: "" });
     }
     if (data.username.length > 0 && data.password.length > 0) {
-      axios.post("/login", { data }).then(res => {
+      axios.post("http://localhost:3001/login", { data }).then(res => {
         if (res.data.success) {
           localStorage.setItem("token", res.data.token);
           this.props.onUser(res.data.data);

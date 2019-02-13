@@ -28,7 +28,7 @@ class Tracking extends Component {
   handleSubmit = e => {
     e.preventDefault();
     const ims = {
-      id: this.state.id,
+      reqno: this.state.id,
       trackingNo: this.state.trackingNo
     };
 

@@ -49,7 +49,7 @@ function appendZeros(data, requiredLength) {
 //
 app.post("/login", (req, res) => {
   var { username, password } = req.body.data;
-
+  console.log("hai");
   if (username === "admin" || username === "operator") {
     var FIND_USER_QUERY = `SELECT username FROM credentials WHERE username="${username}" AND password="${password}"`;
     connection.query(FIND_USER_QUERY, (err, result) => {
@@ -170,13 +170,13 @@ app.post("/getposts", verifyToken, (req, res) => {
         if (searchStatus) {
           var SELECT_ALL_QUERY = `SELECT reqno,vendor,orderno,invoice,date,amount,tracking,processed,user,type FROM table1 WHERE reqno="${search}" ORDER BY table1.id DESC LIMIT 1`;
         } else {
-          var SELECT_ALL_QUERY = `SELECT reqno,vendor,orderno,invoice,date,amount,tracking,processed,user,type FROM table1 WHERE 1 ORDER BY table1.processed ASC`;
+          var SELECT_ALL_QUERY = `SELECT reqno,vendor,orderno,invoice,date,amount,tracking,processed,user,type FROM table1 WHERE type = "C" OR type = "N" ORDER BY table1.processed ASC`;
         }
       else {
         if (searchStatus) {
           var SELECT_ALL_QUERY = `SELECT reqno,vendor,orderno,invoice,date,amount,tracking,processed,user,type FROM table1 WHERE user="${id}" AND reqno="${search}" ORDER BY table1.id DESC LIMIT 1`;
         } else {
-          var SELECT_ALL_QUERY = `SELECT reqno,vendor,orderno,invoice,date,amount,tracking,processed,user,type FROM table1 WHERE user="${id}" ORDER BY table1.processed ASC`;
+          var SELECT_ALL_QUERY = `SELECT reqno,vendor,orderno,invoice,date,amount,tracking,processed,user,type FROM table1 WHERE user="${id}" AND (type = "C" OR type = "N") ORDER BY table1.processed ASC`;
         }
       }
       connection.query(SELECT_ALL_QUERY, (err, results) => {
@@ -259,8 +259,9 @@ app.post("/addpost", verifyToken, (req, res) => {
 });
 
 app.put("/updatepost", (req, res) => {
-  var { id, trackingNo } = req.body.ims;
-  var UPDATE_QUERY = `UPDATE table1 SET processed = "1", tracking = "${trackingNo}" WHERE table1.id = ${id}`;
+  var { reqno, trackingNo } = req.body.ims;
+  var UPDATE_QUERY = `UPDATE table1 SET processed = "1", tracking = "${trackingNo}" WHERE table1.reqno = "${reqno}"`;
+  console.log(UPDATE_QUERY);
   connection.query(UPDATE_QUERY, (err, result) => {
     if (err) return res.json({ data: false });
     else res.send("Updated successfully");
@@ -277,30 +278,64 @@ app.post("/requestforchange", verifyToken, (req, res) => {
       date =
         date[2] + "-" + appendZeros(date[0], 2) + "-" + appendZeros(date[1], 2);
       var user = authData.data.id;
-      var NO_OF_REQUEST_QUERY = `SELECT id FROM table1 WHERE reqno LIKE "${reqno}" AND vendor LIKE "${vendor}" AND orderno LIKE "${order}" AND invoice LIKE "${invoice}" AND date LIKE "${date}" AND amount LIKE "${amount}"`;
-      connection.query(NO_OF_REQUEST_QUERY, (err, result) => {
+      var CHECK_SUBMIT_WITHOUT_CHANGE_QUERY = `SELECT id,processed FROM table1 WHERE reqno LIKE "${reqno}" AND vendor LIKE "${vendor}" AND orderno LIKE "${order}" AND invoice LIKE "${invoice}" AND date LIKE "${date}" AND amount LIKE "${amount}" AND type = "U"`;
+      connection.query(CHECK_SUBMIT_WITHOUT_CHANGE_QUERY, (err, result) => {
         if (err) throw err;
         else if (result.length === 0) {
-          console.log("1");
-          var VALUES = [
-            vendor,
-            "U",
-            order,
-            invoice,
-            date,
-            amount,
-            "absent",
-            0,
-            user,
-            reqno
-          ];
-          var INSERT_QUERY = `INSERT INTO table1 (vendor, type, orderno, invoice, date, amount, tracking, processed,user,reqno) VALUES (?)`;
-          connection.query(INSERT_QUERY, [VALUES], err => {
-            if (err) return res.json({ data: false });
-            else return res.json({ data: true });
+          var CHECK_PROCESSED_QUERY = `SELECT id,type,vendor,orderno,invoice,date,amount,tracking,processed FROM table1 WHERE reqno LIKE "${reqno}"`;
+          connection.query(CHECK_PROCESSED_QUERY, (err, result) => {
+            if (err) throw err;
+            else if (result[0].processed === 0) {
+              var VALUES = [
+                vendor,
+                "N",
+                order,
+                invoice,
+                date,
+                amount,
+                "absent",
+                0,
+                user,
+                reqno
+              ];
+              var UPDATE_OLD_REQUEST_TYPE_QUERY = `UPDATE table1 SET type = "T" WHERE reqno = ${reqno} AND type = "N"`;
+              var INSERT_QUERY = `INSERT INTO table1 (vendor, type, orderno, invoice, date, amount, tracking, processed,user,reqno) VALUES (?)`;
+              connection.query(UPDATE_OLD_REQUEST_TYPE_QUERY, err => {
+                if (err) throw err;
+                else {
+                  connection.query(INSERT_QUERY, [VALUES], err => {
+                    if (err) return res.json({ data: false });
+                    else return res.json({ data: true });
+                  });
+                }
+              });
+            } else {
+              var VALUES = [
+                vendor,
+                "C",
+                order,
+                invoice,
+                date,
+                amount,
+                result[0].tracking,
+                1,
+                user,
+                reqno
+              ];
+              var UPDATE_OLD_REQUEST_TYPE_QUERY = `UPDATE table1 SET type = "T" WHERE reqno = ${reqno} AND type = "N"`;
+              var INSERT_QUERY = `INSERT INTO table1 (vendor, type, orderno, invoice, date, amount, tracking, processed,user,reqno) VALUES (?)`;
+              connection.query(UPDATE_OLD_REQUEST_TYPE_QUERY, err => {
+                if (err) throw err;
+                else {
+                  connection.query(INSERT_QUERY, [VALUES], err => {
+                    if (err) return res.json({ data: false });
+                    else return res.json({ data: true });
+                  });
+                }
+              });
+            }
           });
         } else {
-          console.log("2");
           return res.json({
             data: false,
             msgStatus: true,
