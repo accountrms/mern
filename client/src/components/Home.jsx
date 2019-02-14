@@ -44,7 +44,8 @@ class Home extends Component {
         if (res.data.results.length !== 0) {
           this.setState({
             trackingAll: res.data.results,
-            searchStatus: true
+            searchStatus: true,
+            searchError: ""
           });
         } else if (res.data.msgStatus) {
           this.setState({
@@ -80,16 +81,27 @@ class Home extends Component {
           </td>
           <td>{tracking.amount}</td>
           <td>
-            {tracking.processed === 0 ? (
+            {tracking.tracking === "absent" ? (
               this.state.id === "admin" ? (
                 <Link to={"/generate/" + tracking.reqno} className="btn">
                   Add
                 </Link>
               ) : (
-                <b>Pending</b>
+                <b>Not generated</b>
               )
             ) : (
               tracking.tracking
+            )}
+          </td>
+          <td>
+            {tracking.type === "N" ? (
+              <React.Fragment>New Request</React.Fragment>
+            ) : tracking.type === "T" ? (
+              <React.Fragment>Tr. No. deletion in progress</React.Fragment>
+            ) : (tracking.type === "P") & (tracking.processed === 0) ? (
+              <React.Fragment>Data update in progress</React.Fragment>
+            ) : (
+              <React.Fragment>Completed</React.Fragment>
             )}
           </td>
         </tr>
@@ -116,6 +128,7 @@ class Home extends Component {
                   <th>Invoice Date</th>
                   <th>Invoice Amount</th>
                   <th>Tracking No.</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>{trackingList}</tbody>
@@ -133,7 +146,7 @@ class Home extends Component {
           <React.Fragment>
             <h4>No request yet! </h4>
             <h5>
-              Go to <Link to="/ims">Request</Link> to create new request
+              Go to <Link to="/ims_new">Request</Link> to create new request
             </h5>
           </React.Fragment>
         )}

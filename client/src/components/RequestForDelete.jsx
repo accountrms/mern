@@ -112,36 +112,60 @@ class RequestForDelete extends Component {
           </table>
           <div className="row">
             <form className="col s12">
-              <div className="input-field col s9">
-                <label htmlFor="justification">
-                  Enter the reason for deletion and click Submit
-                </label>
-                <input
-                  onChange={this.handleChange}
-                  name="justification"
-                  id="justification"
-                  type="text"
-                  className="validate"
-                />
-              </div>
-              <div className="input-field col s3">
-                <div className="col s6">
-                  <input
-                    onClick={this.handleDeleteSubmit}
-                    type="button"
-                    className="btn green"
-                    value="Submit"
-                  />
+              {tracking.tracking === "absent" ? (
+                <div className="input-field col s12">
+                  <div className="col s3">
+                    <input
+                      onClick={this.handleDeleteSubmit}
+                      type="button"
+                      className="btn red"
+                      value="DELETE REQUEST"
+                    />
+                  </div>
+                  <div className="col s3">
+                    <input
+                      onClick={this.handleCancel}
+                      type="button"
+                      className="btn green"
+                      value="Cancel"
+                    />
+                  </div>
                 </div>
-                <div className="col s6">
-                  <input
-                    onClick={this.handleCancel}
-                    type="button"
-                    className="btn red"
-                    value="Cancel"
-                  />
-                </div>
-              </div>
+              ) : (
+                <React.Fragment>
+                  <div className="input-field col s9">
+                    <label htmlFor="justification">
+                      Enter the reason for deletion and click Submit
+                    </label>
+                    <input
+                      onChange={this.handleChange}
+                      name="justification"
+                      id="justification"
+                      type="text"
+                      className="validate"
+                    />
+                  </div>
+
+                  <div className="input-field col s3">
+                    <div className="col s6">
+                      <input
+                        onClick={this.handleDeleteSubmit}
+                        type="button"
+                        className="btn green"
+                        value="Submit"
+                      />
+                    </div>
+                    <div className="col s6">
+                      <input
+                        onClick={this.handleCancel}
+                        type="button"
+                        className="btn red"
+                        value="Cancel"
+                      />
+                    </div>
+                  </div>
+                </React.Fragment>
+              )}
             </form>
           </div>
         </div>
