@@ -10,11 +10,11 @@ class RequestForChange extends Component {
     search: "",
     searchStatus: false,
     searchError: "",
-    editVendor: { status: false, data: "" },
-    editOrder: { status: false, data: "" },
-    editInvoice: { status: false, data: "" },
-    editDate: { status: false, data: "" },
-    editAmount: { status: false, data: "" },
+    vendor: "",
+    order: "",
+    invoice: "",
+    date: "",
+    amount: "",
     vendorError: "",
     orderError: "",
     invoiceError: "",
@@ -25,7 +25,8 @@ class RequestForChange extends Component {
 
   handleChange = e => {
     this.setState({
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
+      submitError: ""
     });
   };
 
@@ -36,33 +37,19 @@ class RequestForChange extends Component {
       search: this.state.search,
       searchStatus: true
     };
-    if (this.state.search.length === 12) {
+    if (this.state.search.length === 11) {
       axios.post("getposts", { data }).then(res => {
         if (res.data.results.length !== 0) {
-          var {
-            editVendor,
-            editOrder,
-            editInvoice,
-            editDate,
-            editAmount
-          } = this.state;
-
           let date = res.data.results[0].date.split("-");
           date = new Date(date[0], date[1] - 1, date[2].substr(0, 2));
-
-          editVendor.data = res.data.results[0].vendor;
-          editOrder.data = res.data.results[0].orderno;
-          editInvoice.data = res.data.results[0].invoice;
-          editDate.data = date;
-          editAmount.data = res.data.results[0].amount;
           this.setState({
             trackingAll: res.data.results,
             searchStatus: true,
-            editVendor: editVendor,
-            editOrder: editOrder,
-            editInvoice: editInvoice,
-            editDate: editDate,
-            editAmount: editAmount,
+            vendor: res.data.results[0].vendor,
+            order: res.data.results[0].orderno,
+            invoice: res.data.results[0].invoice,
+            date: date,
+            amount: res.data.results[0].amount,
             searchError: ""
           });
         } else if (res.data.msgStatus) {
@@ -87,47 +74,28 @@ class RequestForChange extends Component {
       trackingAll: [],
       search: "",
       searchStatus: false,
-      editVendor: { status: false, data: "" },
-      editOrder: { status: false, data: "" },
-      editInvoice: { status: false, data: "" },
-      editDate: { status: false, data: "" },
-      editAmount: { status: false, data: "" }
+      vendor: "",
+      order: "",
+      invoice: "",
+      date: "",
+      amount: ""
     });
   };
 
-  handleClickOnEdit = e => {
-    var temp = this.state[e.target.id];
-    temp.status = true;
+  handleChangeDate = date => {
     this.setState({
-      [e.target.id]: temp,
-      submitError: ""
-    });
-  };
-
-  handleChangeOnEdit = e => {
-    var temp = this.state[e.target.name];
-    temp.data = e.target.value;
-    this.setState({
-      [e.target.name]: temp,
-      submitError: ""
-    });
-  };
-  handleChangeDateOnEdit = date => {
-    var temp = this.state.editDate;
-    temp.data = date;
-    this.setState({
-      editDate: temp,
+      date: date,
       submitError: ""
     });
   };
   handleChangeSubmit = e => {
     var data = {
       reqno: this.state.trackingAll[0].reqno,
-      vendor: this.state.editVendor.data,
-      order: this.state.editOrder.data,
-      invoice: this.state.editInvoice.data,
-      date: this.state.editDate.data,
-      amount: this.state.editAmount.data,
+      vendor: this.state.vendor,
+      order: this.state.order,
+      invoice: this.state.invoice,
+      date: this.state.date,
+      amount: this.state.amount,
       token: localStorage.getItem("token")
     };
 
@@ -225,207 +193,92 @@ class RequestForChange extends Component {
                 <thead>
                   <tr>
                     <th>Description</th>
-                    <th>Existing Value</th>
-                    <th>New value</th>
+                    <th>Value</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td>Vendor No.</td>
                     <td>
-                      {this.state.editVendor.status ? (
-                        <div className="input-field">
-                          <input
-                            onChange={this.handleChangeOnEdit}
-                            type="text"
-                            name="editVendor"
-                            defaultValue={tracking.vendor}
-                          />
-                          <span className="helper-text red-text">
-                            {this.state.vendorError}
-                          </span>
-                        </div>
-                      ) : (
-                        tracking.vendor
-                      )}
-                    </td>
-                    <td>
-                      {this.state.editVendor.status ? (
+                      <div className="input-field">
                         <input
-                          className="btn"
-                          type="button"
-                          disabled="disabled"
-                          value="Editing"
+                          onChange={this.handleChange}
+                          type="text"
+                          name="vendor"
+                          defaultValue={tracking.vendor}
                         />
-                      ) : (
-                        <input
-                          onClick={this.handleClickOnEdit}
-                          className="btn"
-                          type="button"
-                          id="editVendor"
-                          value="Edit"
-                        />
-                      )}
+                        <span className="helper-text red-text">
+                          {this.state.vendorError}
+                        </span>
+                      </div>
                     </td>
                   </tr>
                   <tr>
                     <td>Order No.</td>
                     <td>
-                      {this.state.editOrder.status ? (
-                        <div className="input-field">
-                          <input
-                            onChange={this.handleChangeOnEdit}
-                            type="text"
-                            name="editOrder"
-                            defaultValue={tracking.orderno}
-                          />
-                          <span className="helper-text red-text">
-                            {this.state.orderError}
-                          </span>
-                        </div>
-                      ) : (
-                        tracking.orderno
-                      )}
-                    </td>
-                    <td>
-                      {this.state.editOrder.status ? (
+                      <div className="input-field">
                         <input
-                          className="btn"
-                          type="button"
-                          disabled="disabled"
-                          value="Editing"
+                          onChange={this.handleChange}
+                          type="text"
+                          name="order"
+                          defaultValue={tracking.orderno}
                         />
-                      ) : (
-                        <input
-                          onClick={this.handleClickOnEdit}
-                          className="btn"
-                          type="button"
-                          id="editOrder"
-                          value="Edit"
-                        />
-                      )}
+                        <span className="helper-text red-text">
+                          {this.state.orderError}
+                        </span>
+                      </div>
                     </td>
                   </tr>
                   <tr>
                     <td>Invoice No.</td>
                     <td>
-                      {this.state.editInvoice.status ? (
-                        <div className="input-field">
-                          <input
-                            onChange={this.handleChangeOnEdit}
-                            type="text"
-                            name="editInvoice"
-                            defaultValue={tracking.invoice}
-                          />
-                          <span className="helper-text red-text">
-                            {this.state.invoiceError}
-                          </span>
-                        </div>
-                      ) : (
-                        tracking.invoice
-                      )}
-                    </td>
-                    <td>
-                      {this.state.editInvoice.status ? (
+                      <div className="input-field">
                         <input
-                          className="btn"
-                          type="button"
-                          disabled="disabled"
-                          value="Editing"
+                          onChange={this.handleChange}
+                          type="text"
+                          name="invoice"
+                          defaultValue={tracking.invoice}
                         />
-                      ) : (
-                        <input
-                          onClick={this.handleClickOnEdit}
-                          className="btn"
-                          type="button"
-                          id="editInvoice"
-                          value="Edit"
-                        />
-                      )}
+                        <span className="helper-text red-text">
+                          {this.state.invoiceError}
+                        </span>
+                      </div>
                     </td>
                   </tr>
                   <tr>
                     <td>Invoice Date</td>
                     <td>
-                      {this.state.editDate.status ? (
-                        <div className="input-field">
-                          <DatePicker
-                            dateFormat="dd/MM/yyyy"
-                            name="editDate"
-                            selected={this.state.editDate.data}
-                            onChange={this.handleChangeDateOnEdit}
-                            placeholderText="Click to select the date"
-                            showMonthDropdown
-                            showYearDropdown
-                            maxDate={new Date()}
-                          />
-                          <span className="helper-text red-text">
-                            {this.state.dateError}
-                          </span>
-                        </div>
-                      ) : (
-                        tracking.date.substr(8, 2) +
-                        "/" +
-                        tracking.date.substr(5, 2) +
-                        "/" +
-                        tracking.date.substr(0, 4)
-                      )}
-                    </td>
-                    <td>
-                      {this.state.editDate.status ? (
-                        <input
-                          className="btn"
-                          type="button"
-                          disabled="disabled"
-                          value="Editing"
+                      <div className="input-field">
+                        <DatePicker
+                          dateFormat="dd/MM/yyyy"
+                          name="date"
+                          selected={this.state.date}
+                          onChange={this.handleChangeDate}
+                          placeholderText="Click to select the date"
+                          showMonthDropdown
+                          showYearDropdown
+                          maxDate={new Date()}
                         />
-                      ) : (
-                        <input
-                          onClick={this.handleClickOnEdit}
-                          className="btn"
-                          type="button"
-                          id="editDate"
-                          value="Edit"
-                        />
-                      )}
+                        <span className="helper-text red-text">
+                          {this.state.dateError}
+                        </span>
+                      </div>
                     </td>
                   </tr>
                   <tr>
                     <td>Invoice Amount</td>
                     <td>
-                      {this.state.editAmount.status ? (
-                        <div className="input-field">
-                          <input
-                            onChange={this.handleChangeOnEdit}
-                            type="text"
-                            name="editAmount"
-                            defaultValue={tracking.amount}
-                          />
-                          <span className="helper-text red-text">
-                            {this.state.amountError}
-                          </span>
-                        </div>
-                      ) : (
-                        tracking.amount
-                      )}
-                    </td>
-                    <td>
-                      {this.state.editAmount.status ? (
+                      <div className="input-field">
                         <input
-                          className="btn"
-                          type="button"
-                          disabled="disabled"
-                          value="Editing"
+                          onChange={this.handleChange}
+                          type="text"
+                          name="amount"
+                          defaultValue={tracking.amount}
                         />
-                      ) : (
-                        <input
-                          onClick={this.handleClickOnEdit}
-                          className="btn"
-                          type="button"
-                          id="editAmount"
-                          value="Edit"
-                        />
-                      )}
+                        <span className="helper-text red-text">
+                          {this.state.amountError}
+                        </span>
+                      </div>
                     </td>
                   </tr>
                 </tbody>
@@ -458,7 +311,8 @@ class RequestForChange extends Component {
             <div key={tracking.id}>
               <h6>
                 You searched for <b>Request No. {tracking.reqno}</b> <br />
-                Tracking number: <b>{tracking.tracking}</b>
+                Tracking number is generated which is:{" "}
+                <b>{tracking.tracking}</b>
                 <br />
                 Update the required fields by clicking edit. Submit once
                 completed
@@ -467,207 +321,70 @@ class RequestForChange extends Component {
                 <thead>
                   <tr>
                     <th>Description</th>
-                    <th>Existing Value</th>
-                    <th>New value</th>
+                    <th>Value</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td>Vendor No.</td>
-                    <td>
-                      {this.state.editVendor.status ? (
-                        <div className="input-field">
-                          <input
-                            onChange={this.handleChangeOnEdit}
-                            type="text"
-                            name="editVendor"
-                            defaultValue={tracking.vendor}
-                          />
-                          <span className="helper-text red-text">
-                            {this.state.vendorError}
-                          </span>
-                        </div>
-                      ) : (
-                        tracking.vendor
-                      )}
-                    </td>
-                    <td>
-                      {this.state.editVendor.status ? (
-                        <input
-                          className="btn"
-                          type="button"
-                          disabled="disabled"
-                          value="Editing"
-                        />
-                      ) : (
-                        <input
-                          onClick={this.handleClickOnEdit}
-                          className="btn"
-                          type="button"
-                          id="editVendor"
-                          value="Edit"
-                        />
-                      )}
-                    </td>
+                    <td>{tracking.vendor}</td>
+                    <td />
                   </tr>
                   <tr>
                     <td>Order No.</td>
-                    <td>
-                      {this.state.editOrder.status ? (
-                        <div className="input-field">
-                          <input
-                            onChange={this.handleChangeOnEdit}
-                            type="text"
-                            name="editOrder"
-                            defaultValue={tracking.orderno}
-                          />
-                          <span className="helper-text red-text">
-                            {this.state.orderError}
-                          </span>
-                        </div>
-                      ) : (
-                        tracking.orderno
-                      )}
-                    </td>
-                    <td>
-                      {this.state.editOrder.status ? (
-                        <input
-                          className="btn"
-                          type="button"
-                          disabled="disabled"
-                          value="Editing"
-                        />
-                      ) : (
-                        <input
-                          onClick={this.handleClickOnEdit}
-                          className="btn"
-                          type="button"
-                          id="editOrder"
-                          value="Edit"
-                        />
-                      )}
-                    </td>
+                    <td>{tracking.orderno}</td>
+                    <td />
                   </tr>
                   <tr>
                     <td>Invoice No.</td>
                     <td>
-                      {this.state.editInvoice.status ? (
-                        <div className="input-field">
-                          <input
-                            onChange={this.handleChangeOnEdit}
-                            type="text"
-                            name="editInvoice"
-                            defaultValue={tracking.invoice}
-                          />
-                          <span className="helper-text red-text">
-                            {this.state.invoiceError}
-                          </span>
-                        </div>
-                      ) : (
-                        tracking.invoice
-                      )}
-                    </td>
-                    <td>
-                      {this.state.editInvoice.status ? (
+                      <div className="input-field">
                         <input
-                          className="btn"
-                          type="button"
-                          disabled="disabled"
-                          value="Editing"
+                          onChange={this.handleChange}
+                          type="text"
+                          name="invoice"
+                          defaultValue={tracking.invoice}
                         />
-                      ) : (
-                        <input
-                          onClick={this.handleClickOnEdit}
-                          className="btn"
-                          type="button"
-                          id="editInvoice"
-                          value="Edit"
-                        />
-                      )}
+                        <span className="helper-text red-text">
+                          {this.state.invoiceError}
+                        </span>
+                      </div>
                     </td>
                   </tr>
                   <tr>
                     <td>Invoice Date</td>
                     <td>
-                      {this.state.editDate.status ? (
-                        <div className="input-field">
-                          <DatePicker
-                            dateFormat="dd/MM/yyyy"
-                            name="editDate"
-                            selected={this.state.editDate.data}
-                            onChange={this.handleChangeDateOnEdit}
-                            placeholderText="Click to select the date"
-                            showMonthDropdown
-                            showYearDropdown
-                            maxDate={new Date()}
-                          />
-                          <span className="helper-text red-text">
-                            {this.state.dateError}
-                          </span>
-                        </div>
-                      ) : (
-                        tracking.date.substr(8, 2) +
-                        "/" +
-                        tracking.date.substr(5, 2) +
-                        "/" +
-                        tracking.date.substr(0, 4)
-                      )}
-                    </td>
-                    <td>
-                      {this.state.editDate.status ? (
-                        <input
-                          className="btn"
-                          type="button"
-                          disabled="disabled"
-                          value="Editing"
+                      <div className="input-field">
+                        <DatePicker
+                          dateFormat="dd/MM/yyyy"
+                          name="date"
+                          selected={this.state.date}
+                          onChange={this.handleChangeDate}
+                          placeholderText="Click to select the date"
+                          showMonthDropdown
+                          showYearDropdown
+                          maxDate={new Date()}
                         />
-                      ) : (
-                        <input
-                          onClick={this.handleClickOnEdit}
-                          className="btn"
-                          type="button"
-                          id="editDate"
-                          value="Edit"
-                        />
-                      )}
+                        <span className="helper-text red-text">
+                          {this.state.dateError}
+                        </span>
+                      </div>
                     </td>
                   </tr>
                   <tr>
                     <td>Invoice Amount</td>
                     <td>
-                      {this.state.editAmount.status ? (
-                        <div className="input-field">
-                          <input
-                            onChange={this.handleChangeOnEdit}
-                            type="text"
-                            name="editAmount"
-                            defaultValue={tracking.amount}
-                          />
-                          <span className="helper-text red-text">
-                            {this.state.amountError}
-                          </span>
-                        </div>
-                      ) : (
-                        tracking.amount
-                      )}
-                    </td>
-                    <td>
-                      {this.state.editAmount.status ? (
+                      <div className="input-field">
                         <input
-                          className="btn"
-                          type="button"
-                          disabled="disabled"
-                          value="Editing"
+                          onChange={this.handleChange}
+                          type="text"
+                          name="amount"
+                          defaultValue={tracking.amount}
                         />
-                      ) : (
-                        <input
-                          onClick={this.handleClickOnEdit}
-                          className="btn"
-                          type="button"
-                          id="editAmount"
-                          value="Edit"
-                        />
-                      )}
+                        <span className="helper-text red-text">
+                          {this.state.amountError}
+                        </span>
+                      </div>
                     </td>
                   </tr>
                 </tbody>

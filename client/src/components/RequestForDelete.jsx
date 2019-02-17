@@ -24,7 +24,7 @@ class RequestForDelete extends Component {
       search: this.state.search,
       searchStatus: true
     };
-    if (this.state.search.length === 12) {
+    if (this.state.search.length === 11) {
       axios.post("getposts", { data }).then(res => {
         if (res.data.results.length !== 0) {
           this.setState({

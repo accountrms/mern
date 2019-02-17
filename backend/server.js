@@ -49,7 +49,6 @@ function appendZeros(data, requiredLength) {
 //
 app.post("/login", (req, res) => {
   var { username, password } = req.body.data;
-  console.log("hai");
   if (username === "admin" || username === "operator") {
     var FIND_USER_QUERY = `SELECT username FROM credentials WHERE username="${username}" AND password="${password}"`;
     connection.query(FIND_USER_QUERY, (err, result) => {
@@ -170,13 +169,13 @@ app.post("/getposts", verifyToken, (req, res) => {
         if (searchStatus) {
           var SELECT_ALL_QUERY = `SELECT reqno,vendor,orderno,invoice,date,amount,tracking,processed,user,type FROM table1 WHERE reqno="${search}" ORDER BY table1.id DESC LIMIT 1`;
         } else {
-          var SELECT_ALL_QUERY = `SELECT reqno,vendor,orderno,invoice,date,amount,tracking,processed,user,type FROM table1 WHERE type = "P" OR type = "N" OR (type = "T" AND processed = 0 AND tracking != "absent") ORDER BY table1.processed ASC`;
+          var SELECT_ALL_QUERY = `SELECT reqno,vendor,orderno,invoice,date,amount,tracking,processed,user,type FROM table1 WHERE type != "C" ORDER BY table1.processed ASC`;
         }
       else {
         if (searchStatus) {
           var SELECT_ALL_QUERY = `SELECT reqno,vendor,orderno,invoice,date,amount,tracking,processed,user,type FROM table1 WHERE user="${id}" AND reqno="${search}" ORDER BY table1.id DESC LIMIT 1`;
         } else {
-          var SELECT_ALL_QUERY = `SELECT reqno,vendor,orderno,invoice,date,amount,tracking,processed,user,type FROM table1 WHERE user="${id}" AND (type = "P" OR type = "N")  OR (type = "T" AND processed = 0 AND tracking != "absent") ORDER BY table1.processed ASC`;
+          var SELECT_ALL_QUERY = `SELECT reqno,vendor,orderno,invoice,date,amount,tracking,processed,user,type FROM table1 WHERE user="${id}" AND type != "C" ORDER BY table1.processed ASC`;
         }
       }
       connection.query(SELECT_ALL_QUERY, (err, results) => {
@@ -185,13 +184,13 @@ app.post("/getposts", verifyToken, (req, res) => {
         } else if (results.length === 0) {
           return res.json({ results, authData, searchStatus, msg: "" });
         } else if (searchStatus) {
-          if (results[0].type === "T") {
+          if (results[0].type === "D") {
             return res.json({
               results: [],
               msgStatus: true,
               msg: "Request already deleted. Try with another request number"
             });
-          } else if (results[0].type === "D") {
+          } else if (results[0].type === "T") {
             if (results[0].processed === 0) {
               return res.json({
                 results: [],
@@ -204,9 +203,83 @@ app.post("/getposts", verifyToken, (req, res) => {
                 results: [],
                 msgStatus: true,
                 msg:
+                  "Request for update already submitted. Try with correct request number"
+              });
+            }
+          } else if (results[0].type === "P" && results[0].processed === 0) {
+            return res.json({
+              results: [],
+              msgStatus: true,
+              msg:
+                "Request already processed and tracking number deleted. Try with correct request number"
+            });
+          } else {
+            return res.json({ results, authData, searchStatus, msg: "" });
+          }
+        } else {
+          return res.json({ results, authData, searchStatus, msg: "" });
+        }
+      });
+    }
+  });
+});
+
+app.post("/getdeleteposts", verifyToken, (req, res) => {
+  jwt.verify(req.token, "on!the@underwear#scene$", (err, authData) => {
+    if (err) {
+      res.sendStatus(403);
+    } else {
+      var { searchStatus, search } = req.body.data;
+      var id = authData.data.id;
+      if (authData.data.user === "admin" || authData.data.user === "operator")
+        if (searchStatus) {
+          var SELECT_ALL_QUERY = `SELECT reqno,vendor,orderno,invoice,date,amount,tracking,processed,user,type FROM table1 WHERE reqno="${search}" ORDER BY table1.id DESC LIMIT 1`;
+        } else {
+          var SELECT_ALL_QUERY = `SELECT delreqno,vendor,orderno,invoice,date,amount,user,tracking,deletetable.processed FROM table1 INNER JOIN deletetable ON table1.id = deletetable.ref`;
+        }
+      else {
+        if (searchStatus) {
+          var SELECT_ALL_QUERY = `SELECT reqno,vendor,orderno,invoice,date,amount,tracking,processed,user,type FROM table1 WHERE user="${id}" AND reqno="${search}" ORDER BY table1.id DESC LIMIT 1`;
+        } else {
+          var SELECT_ALL_QUERY = `SELECT delreqno,vendor,orderno,invoice,date,amount,user,tracking,deletetable.processed FROM table1 INNER JOIN deletetable ON table1.id = deletetable.ref`;
+        }
+      }
+      connection.query(SELECT_ALL_QUERY, (err, results) => {
+        console.log(results);
+        if (err) {
+          res.json({ data: false });
+        } else if (results.length === 0) {
+          return res.json({ results, authData, searchStatus, msg: "" });
+        } else if (searchStatus) {
+          if (results[0].type === "T") {
+            return res.json({
+              results: [],
+              msgStatus: true,
+              msg:
+                "Request for deletion already submitted. Try with correct request number"
+            });
+          } else if (results[0].type === "D") {
+            if (results[0].processed === 0) {
+              return res.json({
+                results: [],
+                msgStatus: true,
+                msg: "Request already deleted. Try with another request number"
+              });
+            } else {
+              return res.json({
+                results: [],
+                msgStatus: true,
+                msg:
                   "Request already processed and tracking number deleted. Try with correct request number"
               });
             }
+          } else if (results[0].type === "P" && results[0].processed === 0) {
+            return res.json({
+              results: [],
+              msgStatus: true,
+              msg:
+                "Request for update already submitted. Try with correct request number"
+            });
           } else {
             return res.json({ results, authData, searchStatus, msg: "" });
           }
@@ -230,10 +303,69 @@ app.post("/getposts/:reqno", verifyToken, (req, res) => {
       var SELECT_ALL_QUERY = `SELECT reqno,vendor,orderno,invoice,date,amount,tracking,processed,user,type FROM table1 WHERE reqno=${reqno} ORDER BY id DESC LIMIT 1`;
       connection.query(SELECT_ALL_QUERY, (err, results) => {
         if (err) throw err;
-        else if (results[0].type !== "P") {
+        else if (results[0].type === "N" && results[0].processed === 0) {
           return res.json({ data: results });
         } else {
           console.log("already processed");
+        }
+      });
+    } else {
+      console.log("You are not authorised");
+    }
+  });
+});
+
+app.post("/getdeletereq/:reqno", verifyToken, (req, res) => {
+  jwt.verify(req.token, "on!the@underwear#scene$", (err, authData) => {
+    if (err) {
+      res.sendStatus(403);
+    } else if (
+      authData.data.id === "admin" ||
+      authData.data.id === "operator"
+    ) {
+      var { reqno } = req.params;
+      var SELECT_ID_QUERY = `SELECT ref,reason FROM deletetable WHERE delreqno = "${reqno}"`;
+      connection.query(SELECT_ID_QUERY, (err, results) => {
+        if (err) throw err;
+        else {
+          var SELECT_DELREQ_QUERY = `SELECT type,vendor,orderno,invoice,date,amount,user,processed,tracking FROM table1 WHERE id = "${
+            results[0].ref
+          }"`;
+          var reason = results[0].reason;
+          connection.query(SELECT_DELREQ_QUERY, (err, results) => {
+            results[0].push(reason);
+            console.log(results, reason);
+            if (err) throw err;
+            else if (results[0].type === "T" && results[0].processed === 0) {
+              return res.json({ data: results });
+            } else {
+              console.log("Wrong request number");
+            }
+          });
+        }
+      });
+    } else {
+      console.log("You are not authorised");
+    }
+  });
+});
+
+app.post("/getupdatereq/:reqno", verifyToken, (req, res) => {
+  jwt.verify(req.token, "on!the@underwear#scene$", (err, authData) => {
+    if (err) {
+      res.sendStatus(403);
+    } else if (
+      authData.data.id === "admin" ||
+      authData.data.id === "operator"
+    ) {
+      var { reqno } = req.params;
+      var SELECT_ALL_QUERY = `SELECT reqno,vendor,orderno,invoice,date,amount,tracking,processed,user,type,reason FROM table1 WHERE reqno=${reqno} ORDER BY id DESC LIMIT 1`;
+      connection.query(SELECT_ALL_QUERY, (err, results) => {
+        if (err) throw err;
+        else if (results[0].type === "P" && results[0].processed === 0) {
+          return res.json({ data: results });
+        } else {
+          console.log("Wrong request number");
         }
       });
     } else {
@@ -246,11 +378,11 @@ app.post("/addpost", verifyToken, (req, res) => {
   jwt.verify(req.token, "on!the@underwear#scene$", (err, authData) => {
     if (err) res.sendStatus(403);
     else {
-      var year = new Date().getFullYear();
+      var year = new Date().getYear();
       var month = appendZeros(new Date().getMonth() + 1, 2);
       var date = appendZeros(new Date().getDate(), 2);
       var today = year + "" + month + "" + date;
-      var NO_OF_REQUEST_QUERY = `SELECT reqno FROM table1 WHERE reqno LIKE "${today}%"`;
+      var NO_OF_REQUEST_QUERY = `SELECT DISTINCT reqno FROM table1 WHERE reqno LIKE "${today}%"`;
       connection.query(NO_OF_REQUEST_QUERY, (err, result) => {
         if (err) throw err;
         else if (
@@ -287,13 +419,53 @@ app.post("/addpost", verifyToken, (req, res) => {
   });
 });
 
-app.put("/updatepost", (req, res) => {
-  var { reqno, trackingNo } = req.body.ims;
-  var UPDATE_QUERY = `UPDATE table1 SET processed = "1", type = "P", tracking = "${trackingNo}" WHERE table1.reqno = "${reqno}" AND type = "N"`;
-  console.log(UPDATE_QUERY);
-  connection.query(UPDATE_QUERY, (err, result) => {
-    if (err) return res.json({ data: false });
-    else res.send("Updated successfully");
+app.put("/updatepost", verifyToken, (req, res) => {
+  jwt.verify(req.token, "on!the@underwear#scene$", (err, authData) => {
+    if (err) res.sendStatus(403);
+    else if (authData.data.id === "admin" || authData.data.id === "operator") {
+      var { reqno, trackingNo } = req.body.data;
+      var UPDATE_QUERY = `UPDATE table1 SET tracking = "${trackingNo}", type = "P", processed = "1" WHERE reqno = "${reqno}" AND type = "N" AND processed = "0"`;
+      connection.query(UPDATE_QUERY, err => {
+        if (err) return res.json({ data: false });
+        else {
+          var UPDATE_QUERY = `UPDATE table1 SET table1.trackingtimestamp = table1.lastchangetimestamp WHERE reqno = "${reqno}" AND type = "P" AND processed = "1"`;
+          connection.query(UPDATE_QUERY, err => {
+            if (err) return res.json({ data: false });
+            else {
+              res.send("Updated successfully");
+            }
+          });
+        }
+      });
+    }
+  });
+});
+
+app.put("/confirmdelreq", verifyToken, (req, res) => {
+  jwt.verify(req.token, "on!the@underwear#scene$", (err, authData) => {
+    if (err) res.sendStatus(403);
+    else if (authData.data.id === "admin" || authData.data.id === "operator") {
+      var { reqno } = req.body.data;
+      var UPDATE_QUERY = `UPDATE table1 SET processed = "1" WHERE reqno = "${reqno}" AND type = "T" AND processed = "0"`;
+      connection.query(UPDATE_QUERY, err => {
+        if (err) return res.json({ data: false });
+        else res.send("Updated successfully");
+      });
+    }
+  });
+});
+
+app.put("/confirmupdatereq", verifyToken, (req, res) => {
+  jwt.verify(req.token, "on!the@underwear#scene$", (err, authData) => {
+    if (err) res.sendStatus(403);
+    else if (authData.data.id === "admin" || authData.data.id === "operator") {
+      var { reqno } = req.body.data;
+      var UPDATE_QUERY = `UPDATE table1 SET processed = "1" WHERE reqno = "${reqno}" AND type = "P" AND processed = "0"`;
+      connection.query(UPDATE_QUERY, err => {
+        if (err) return res.json({ data: false });
+        else res.send("Updated successfully");
+      });
+    }
   });
 });
 
@@ -311,10 +483,10 @@ app.post("/requestforchange", verifyToken, (req, res) => {
       connection.query(CHECK_SUBMIT_WITHOUT_CHANGE_QUERY, (err, result) => {
         if (err) throw err;
         else if (result.length === 0) {
-          var CHECK_PROCESSED_QUERY = `SELECT id,type,vendor,orderno,invoice,date,amount,tracking,processed FROM table1 WHERE reqno LIKE "${reqno}"`;
+          var CHECK_PROCESSED_QUERY = `SELECT id,type,vendor,orderno,invoice,date,amount,tracking,processed FROM table1 WHERE reqno LIKE "${reqno}" ORDER BY id DESC LIMIT 1`;
           connection.query(CHECK_PROCESSED_QUERY, (err, result) => {
             if (err) throw err;
-            else if (result[0].processed === 0) {
+            else if (result[0].processed === 0 && result[0].type !== "P") {
               var VALUES = [
                 vendor,
                 "N",
@@ -338,7 +510,7 @@ app.post("/requestforchange", verifyToken, (req, res) => {
                   });
                 }
               });
-            } else {
+            } else if (result[0].processed === 1 && result[0].type === "P") {
               var VALUES = [
                 vendor,
                 "P",
@@ -351,7 +523,7 @@ app.post("/requestforchange", verifyToken, (req, res) => {
                 user,
                 reqno
               ];
-              var UPDATE_OLD_REQUEST_TYPE_QUERY = `UPDATE table1 SET type = "C" WHERE reqno = ${reqno} AND type = "P"`;
+              var UPDATE_OLD_REQUEST_TYPE_QUERY = `UPDATE table1 SET type = "C", processed = "1" WHERE reqno = ${reqno} AND type = "P"`;
               var INSERT_QUERY = `INSERT INTO table1 (vendor, type, orderno, invoice, date, amount, tracking, processed,user,reqno) VALUES (?)`;
               connection.query(UPDATE_OLD_REQUEST_TYPE_QUERY, err => {
                 if (err) throw err;
@@ -382,22 +554,45 @@ app.post("/requestfordelete", verifyToken, (req, res) => {
     if (err) res.sendStatus(403);
     else if (authData.data.id === details[0].user) {
       var { reqno } = details[0];
-      var VALUES = [reqno, justification];
-      CHECK_ALREADY_DELETED = `SELECT id FROM table1 WHERE reqno = ${reqno} AND type = "D"`;
+      CHECK_ALREADY_DELETED = `SELECT id, type, processed FROM table1 WHERE reqno = ${reqno} ORDER BY id DESC LIMIT 1`;
       connection.query(CHECK_ALREADY_DELETED, (err, result) => {
         if (err) return res.json({ data: false });
-        else if (result.length === 0) {
-          var UPDATE_QUERY = `UPDATE table1 SET processed = "0", type = "T" WHERE table1.reqno = ${reqno}`;
-          var ADD_DELETE_DETAILS = `INSERT INTO deletedetails (reqno, remarks) VALUES (?)`;
+        else if (result[0].type === "N" && result[0].processed === 0) {
+          var UPDATE_QUERY = `UPDATE table1 SET type = "D" WHERE reqno = ${reqno}  AND type = "N" AND processed = "0"`;
           connection.query(UPDATE_QUERY, err => {
             if (err) return res.json({ data: false });
-            else if (justification !== "") {
-              connection.query(ADD_DELETE_DETAILS, [VALUES], err => {
-                if (err) return res.json({ data: false });
-                else return res.json({ data: true });
-              });
-            } else {
+            else {
               return res.json({ data: true });
+            }
+          });
+        } else if (result[0].type === "P" && result[0].processed === 1) {
+          var UPDATE_QUERY = `UPDATE table1 SET type = "T", processed = "0" WHERE reqno = ${reqno} AND type = "P" AND processed = "1"`;
+          connection.query(UPDATE_QUERY, err => {
+            if (err) return res.json({ data: false });
+            else {
+              var year = new Date().getYear() + 200;
+              var month = appendZeros(new Date().getMonth() + 1, 2);
+              var date = appendZeros(new Date().getDate(), 2);
+              var today = year + "" + month + "" + date;
+              var NO_OF_REQUEST_QUERY = `SELECT id FROM deletetable WHERE delreqno LIKE "${today}%"`;
+              connection.query(NO_OF_REQUEST_QUERY, (err, results) => {
+                if (err) throw err;
+                else if (
+                  authData.data.id === "admin" ||
+                  authData.data.id === "operator"
+                ) {
+                  return res.json({ data: false });
+                } else {
+                  newReqNo = appendZeros(results.length + 1, 4);
+                  var delreqno = today + "" + newReqNo;
+                }
+                var VALUES = [result[0].id, delreqno, justification, "0"];
+                var ADD_DELETE_REQUEST = `INSERT INTO deletetable (ref, delreqno, reason, processed) VALUES (?)`;
+                connection.query(ADD_DELETE_REQUEST, [VALUES], err => {
+                  if (err) return res.json({ data: false });
+                  else return res.json({ data: true });
+                });
+              });
             }
           });
         }

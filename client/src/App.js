@@ -14,6 +14,8 @@ import RequestSuccess from "./components/RequestSuccess";
 import GenerateSuccess from "./components/GenerateSuccess";
 import RequestForChangeSuccess from "./components/RequestForChangeSuccess";
 import RequestForDeleteSuccess from "./components/RequestForDeleteSuccess";
+import UpdateProcessed from "./components/UpdateProcessed";
+import DeleteProcessed from "./components/DeleteProcessed";
 
 class App extends Component {
   state = {
@@ -42,7 +44,7 @@ class App extends Component {
             <PrivateRoute path="/ims_new" component={NewRequest} />
             <PrivateRoute path="/ims_change" component={RequestForChange} />
             <PrivateRoute path="/ims_delete" component={RequestForDelete} />
-            <PrivateRoute path="/generate/:ims_id" component={Tracking} />
+            <PrivateRoute path="/generate/:id" component={Tracking} />
             <PrivateRoute path="/reqsuccess" component={RequestSuccess} />
             <PrivateRoute path="/gensuccess" component={GenerateSuccess} />
             <PrivateRoute
@@ -53,6 +55,8 @@ class App extends Component {
               path="/reqdeletesuccess"
               component={RequestForDeleteSuccess}
             />
+            <PrivateRoute path="/update/:id" component={UpdateProcessed} />
+            <PrivateRoute path="/delete/:id" component={DeleteProcessed} />
             <Route component={Notfound} />
           </Switch>
         </div>

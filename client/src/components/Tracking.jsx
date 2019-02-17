@@ -9,7 +9,7 @@ class Tracking extends Component {
   };
 
   componentDidMount() {
-    let id = this.props.match.params.ims_id;
+    let id = this.props.match.params.id;
     this.setState({ id });
 
     var data = {
@@ -27,13 +27,14 @@ class Tracking extends Component {
 
   handleSubmit = e => {
     e.preventDefault();
-    const ims = {
+    const data = {
       reqno: this.state.id,
-      trackingNo: this.state.trackingNo
+      trackingNo: this.state.trackingNo,
+      token: localStorage.getItem("token")
     };
 
     axios
-      .put("/updatepost", { ims })
+      .put("/updatepost", { data })
       .then(res => {
         if (res.data) {
           this.props.history.push("/gensuccess");
